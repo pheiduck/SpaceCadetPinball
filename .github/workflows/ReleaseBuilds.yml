@@ -1,23 +1,66 @@
 name: Make Release Builds
 
-on: [workflow_dispatch]
-
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Automated Release'
+        required: true
+        type: string
 jobs:
   build-macos:
-    runs-on: macos-12
+    runs-on: macos-latest
     timeout-minutes: 15
+    outputs:
+      dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@main
         with:
           ref: master
 
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: 13
+      - name: Build macOS App
+        run: bash build-mac-app.sh
 
-      - run: bash build-mac-app.sh
+      - name: Get .dmg file name
+        id: find_dmg
+        run: |
+          FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
+          echo "Found dmg: $FILE"
+          echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@main
         with:
           name: mac-build
-          path: SpaceCadetPinball-*-mac.dmg
+          path: ${{ steps.find_dmg.outputs.dmg_name }}
+
+  release:
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@main
+        with:
+          name: mac-build
+          path: ./release
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: Release ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/${{ needs.build-macos.outputs.dmg_name }}
+          asset_name: ${{ needs.build-macos.outputs.dmg_name }}
+          asset_content_type: application/octet-stream
