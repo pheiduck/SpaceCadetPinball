@@ -15,7 +15,7 @@ if [ ! -f "$sdl_filename" ]; then
   curl -sSf -L -O "$sdl_url"
 fi
 
-echo "sha256:137029b3b4d76df95350bb1d5336d5a593e4e1eaf9faf413abee09da6c5ec037  $sdl_filename" | shasum -a 256 -c
+echo "137029b3b4d76df95350bb1d5336d5a593e4e1eaf9faf413abee09da6c5ec037  $sdl_filename" | shasum -a 256 -c
 
 hdiutil attach "$sdl_filename" -quiet
 cp -a /Volumes/SDL3/SDL3.framework .
