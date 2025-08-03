@@ -1370,7 +1370,7 @@ void winmain::RenderFrameTimeDialog()
 			average /= static_cast<float>(gfrDisplay.size());
 			dev /= static_cast<float>(gfrDisplay.size());
 			char overlay[64];
-			snprintf(overlay, "avg %.3fms, dev %.3fms", average, dev);
+			snprintf(overlay, sizeof(overlay), "avg %.3fms, dev %.3fms", average, dev);
 
 			auto region = ImGui::GetContentRegionAvail();
 			ImGui::PlotLines("Lines", gfrDisplay.data(), static_cast<int>(gfrDisplay.size()),
