@@ -352,8 +352,9 @@ void DatFile::AddMsgFont(MsgFont* font, const std::string& fontName)
 		else
 		{
 			auto groupName = new char[30];
-			sprintf(groupName, "char %d='%c'", charInd, charInd);
-			group->AddEntry(new EntryData(FieldTypes::GroupName, groupName));
+			 snprintf(groupName, 30, "char %d='%c'", charInd, charInd);
+			 group->AddEntry(new EntryData(FieldTypes::GroupName, groupName));
+
 		}
 
 		Groups.push_back(group);
