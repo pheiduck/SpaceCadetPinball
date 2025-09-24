@@ -43,7 +43,7 @@ cmake -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=bin .
 cmake --build .
 
 # === Prepare .app Bundle ===
-sw_version='2.1.11'
+sw_version='2.1.12'
 
 mkdir -p SpaceCadetPinball.app/Contents/MacOS
 mkdir -p SpaceCadetPinball.app/Contents/Resources
