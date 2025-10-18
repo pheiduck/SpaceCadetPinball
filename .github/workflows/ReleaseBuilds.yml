@@ -132,12 +132,12 @@ jobs:
       - name: Locate binary and copy to release
         run: |
           mkdir release
-          $exe = Get-ChildItem -Recurse build\bin -Filter 'SpaceCadetPinball.exe' | Select-Object -First 1
-          if (-not $exe) {
-            Write-Error "❌ Could not find SpaceCadetPinball.exe!"
+          $exe = "SpaceCadetPinball\bin\SpaceCadetPinball.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "❌ Could not find SpaceCadetPinball.exe at $exe"
             exit 1
           }
-          Copy-Item $exe.FullName release\
+          Copy-Item $exe release\
         shell: pwsh
 
       - name: Download game assets
