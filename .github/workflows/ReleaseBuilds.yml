@@ -108,6 +108,7 @@ jobs:
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/
+          rm -f release\PINBALL.EXE
 
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
@@ -185,7 +186,7 @@ jobs:
       - name: Package Windows release with assets
         run: |
           Copy-Item -Recurse PinballAssets\Pinball\* release\
-          Remove-Item release\PINBALL.exe -Force
+          Remove-Item release\PINBALL.EXE -Force
           cd release
           powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64-${{ needs.extract-version.outputs.sw_version }}.zip
         shell: pwsh
