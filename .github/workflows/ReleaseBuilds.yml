@@ -3,6 +3,9 @@ name: Make Release Builds
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
 
