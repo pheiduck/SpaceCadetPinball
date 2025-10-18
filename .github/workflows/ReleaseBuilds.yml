@@ -96,6 +96,8 @@ jobs:
         run: |
           mkdir -p build
           cd build
+          export SDL2_DIR=$HOME/sdl2-build
+          export CMAKE_PREFIX_PATH=$SDL2_DIR:$CMAKE_PREFIX_PATH
           cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
           make -j$(nproc)
           cd ..
