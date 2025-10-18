@@ -155,19 +155,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          C:\vcpkg\vcpkg.exe install sdl2:x64-windows-static sdl2-mixer:x64-windows-static
+          C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
         shell: pwsh
 
       - name: Build Windows binary
         run: |
           mkdir build
           cd build
-          cmake .. -G "Ninja" `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON `
-            -DBUILD_SHARED_LIBS=OFF
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           cmake --build . --config Release
           cd ..
         shell: pwsh
