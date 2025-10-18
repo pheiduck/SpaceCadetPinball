@@ -39,7 +39,7 @@ jobs:
       - name: Get .dmg file name
         id: find_dmg
         run: |
-          FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
+          FILE=$(ls SpaceCadetPinball-mac-*.dmg | head -n 1)
           if [[ -z "$FILE" ]]; then
             echo "❌ Could not find .dmg!"
             exit 1
