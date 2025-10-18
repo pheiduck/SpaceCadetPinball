@@ -161,7 +161,7 @@ jobs:
 
       - name: Package Windows release with assets
         run: |
-          mkdir release\Pinball
+          mkdir release
           Copy-Item -Recurse PinballAssets\Pinball\* release\
           Remove-Item release\Pinball.exe -Force
           cd release
