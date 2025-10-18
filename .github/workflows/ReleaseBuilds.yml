@@ -66,23 +66,23 @@ jobs:
       - name: List build directory for debugging
         run: ls -R build
 
-      - name: Package binary with game assets
+      - name: Package Linux binary with game assets
         run: |
-          # Find the binary in build/bin
-          BINARY=$(find build/bin -type f -name 'SpaceCadetPinball' | head -n 1)
-          if [[ -z "$BINARY" ]]; then
-            echo "❌ Could not find Linux binary!"
+          # Adjust path to the actual binary
+          BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
+          if [[ ! -f "$BINARY" ]]; then
+            echo "❌ Could not find Linux binary at $BINARY"
             exit 1
           fi
 
           mkdir -p release/Pinball
           cp "$BINARY" release/
-  
+
           # Download and include game assets
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
-  
+
           # Package everything
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
