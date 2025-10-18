@@ -20,31 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@main
 
-      - name: Build macOS App
+      - name: Build macOS App (.dmg)
         run: bash build-mac-app.sh
 
       - name: Verify build output
         run: ls -R
 
-      - name: Find .app bundle
-        id: find_app
-        run: |
-          APP_PATH=$(find . -type d -name 'SpaceCadetPinball.app' | head -n 1)
-          if [[ -z "$APP_PATH" ]]; then
-            echo "❌ Could not find SpaceCadetPinball.app!"
-            exit 1
-          fi
-          echo "app_path=$APP_PATH" >> $GITHUB_OUTPUT
-
-      - name: Package .dmg
-        run: |
-          hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg \
-          -srcfolder "${{ steps.find_app.outputs.app_path }}" -ov
-
       - name: Get .dmg file name
         id: find_dmg
         run: |
           FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
+          if [[ -z "$FILE" ]]; then
+            echo "❌ Could not find .dmg!"
+            exit 1
+          fi
           echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload macOS artifact
