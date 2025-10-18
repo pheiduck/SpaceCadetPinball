@@ -12,38 +12,38 @@ env:
   ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
 
 jobs:
- build-macos:
-  runs-on: macos-latest
-  timeout-minutes: 25
-  outputs:
-    dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
-  steps:
-    - uses: actions/checkout@main
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    outputs:
+      dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
+    steps:
+      - uses: actions/checkout@main
 
-    - name: Build macOS App
-      run: bash build-mac-app.sh
+      - name: Build macOS App
+        run: bash build-mac-app.sh
 
-    - name: Verify build output
-      run: ls -R
+      - name: Verify build output
+        run: ls -R
 
-    - name: Package .dmg
-      run: |
-        hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg \
-        -srcfolder SpaceCadetPinball.app -ov
+      - name: Package .dmg
+        run: |
+          hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg \
+          -srcfolder SpaceCadetPinball.app -ov
 
-    - name: Get .dmg file name
-      id: find_dmg
-      run: |
-        FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
-        echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
+      - name: Get .dmg file name
+        id: find_dmg
+        run: |
+          FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
+          echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
-    - name: Upload macOS artifact
-      uses: actions/upload-artifact@main
-      with:
-        name: mac-build
-        path: ${{ steps.find_dmg.outputs.dmg_name }}
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: mac-build
+          path: ${{ steps.find_dmg.outputs.dmg_name }}
 
-build-linux:
+  build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
@@ -52,9 +52,10 @@ build-linux:
       - uses: actions/checkout@main
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y \
-          cmake build-essential libsdl2-dev libsdl2-mixer-dev curl unzip
-  
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libsdl2-dev libsdl2-mixer-dev curl unzip
+
       - name: Build Linux binary from source
         run: |
           mkdir -p build
@@ -62,28 +63,25 @@ build-linux:
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           cd ..
-          
+
       - name: List build directory for debugging
         run: ls -R build
-  
+
       - name: Package binary with game assets
         run: |
-          # Find the built binary
           BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
           if [[ -z "$BINARY" ]]; then
             echo "❌ Could not find Linux binary!"
             exit 1
           fi
-  
+
           mkdir -p release/Pinball
           cp "$BINARY" release/
-  
-          # Download and include game assets
-          curl -L -o Win32.Pinball.zip https://archive.org/download/winXP-pinball/Win32.Pinball.zip
+
+          curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
-  
-          # Package everything
+
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
           cd ..
@@ -94,14 +92,14 @@ build-linux:
         run: |
           FILE=$(ls release/SpaceCadetPinball-*-Linux-x86_64.tar.gz | head -n 1)
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
-  
+
       - name: Upload Linux artifact
         uses: actions/upload-artifact@main
         with:
           name: linux-build
           path: ${{ steps.find_tar.outputs.tar_name }}
 
-build-windows:
+  build-windows:
     runs-on: windows-latest
     timeout-minutes: 25
     outputs:
@@ -112,7 +110,6 @@ build-windows:
       - name: Install dependencies
         run: |
           choco install cmake ninja git -y
-          # Install vcpkg
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
           C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
