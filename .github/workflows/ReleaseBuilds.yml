@@ -12,7 +12,7 @@ jobs:
     outputs:
       sw_version: ${{ steps.get_version.outputs.sw_version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
 
       - name: Extract version from build-mac-app.sh
         id: get_version
@@ -28,7 +28,7 @@ jobs:
     outputs:
       dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
 
       - name: Build macOS App (.dmg)
         run: bash build-mac-app.sh
@@ -47,7 +47,7 @@ jobs:
           echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@main
         with:
           name: mac-build
           path: ${{ steps.find_dmg.outputs.dmg_name }}
@@ -59,7 +59,7 @@ jobs:
     outputs:
       tar_name: ${{ steps.find_tar.outputs.tar_name }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
 
       - name: Install dependencies
         run: |
@@ -103,7 +103,7 @@ jobs:
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@main
         with:
           name: linux-build
           path: ${{ steps.find_tar.outputs.tar_name }}
@@ -115,7 +115,7 @@ jobs:
     outputs:
       zip_name: ${{ steps.find_zip.outputs.zip_name }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
 
       - name: Install dependencies
         run: |
@@ -169,7 +169,7 @@ jobs:
         shell: pwsh
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@main
         with:
           name: windows-build
           path: ${{ github.workspace }}/release/${{ steps.find_zip.outputs.zip_name }}
@@ -179,13 +179,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@main
         with:
           path: ./release
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -195,7 +195,7 @@ jobs:
           prerelease: false
 
       - name: Upload all release assets
-        uses: actions/github-script@v7
+        uses: actions/github-script@main
         env:
           UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
         with:
