@@ -120,8 +120,6 @@ jobs:
       - name: Install dependencies
         run: |
           choco install cmake ninja git -y --no-progress
-          git clone -q --depth 1 https://github.com/microsoft/vcpkg.git C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
           C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
         shell: powershell
 
