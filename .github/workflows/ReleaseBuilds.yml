@@ -94,7 +94,7 @@ jobs:
       - name: Get .tar.gz file name
         id: find_tar
         run: |
-          FILE=$(ls release/SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz | head -n 1)
+          FILE=$(ls release/SpaceCadetPinball-Linux-x86_64-${{ steps.extract_version.outputs.sw_version }}.tar.gz | head -n 1)
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Linux artifact
