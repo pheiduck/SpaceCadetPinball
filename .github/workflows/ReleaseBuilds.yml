@@ -26,10 +26,20 @@ jobs:
       - name: Verify build output
         run: ls -R
 
+      - name: Find .app bundle
+        id: find_app
+        run: |
+          APP_PATH=$(find . -type d -name 'SpaceCadetPinball.app' | head -n 1)
+          if [[ -z "$APP_PATH" ]]; then
+            echo "❌ Could not find SpaceCadetPinball.app!"
+            exit 1
+          fi
+          echo "app_path=$APP_PATH" >> $GITHUB_OUTPUT
+
       - name: Package .dmg
         run: |
           hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg \
-          -srcfolder SpaceCadetPinball.app -ov
+          -srcfolder "${{ steps.find_app.outputs.app_path }}" -ov
 
       - name: Get .dmg file name
         id: find_dmg
@@ -69,7 +79,8 @@ jobs:
 
       - name: Package binary with game assets
         run: |
-          BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
+          # Find the binary in build/bin
+          BINARY=$(find build/bin -type f -name 'SpaceCadetPinball' | head -n 1)
           if [[ -z "$BINARY" ]]; then
             echo "❌ Could not find Linux binary!"
             exit 1
@@ -77,11 +88,13 @@ jobs:
 
           mkdir -p release/Pinball
           cp "$BINARY" release/
-
+  
+          # Download and include game assets
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
-
+  
+          # Package everything
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
           cd ..
@@ -130,7 +143,7 @@ jobs:
       - name: Locate binary and copy to release
         run: |
           mkdir release
-          $exe = Get-ChildItem -Recurse build -Filter 'SpaceCadetPinball.exe' | Select-Object -First 1
+          $exe = Get-ChildItem -Recurse build\bin -Filter 'SpaceCadetPinball.exe' | Select-Object -First 1
           if (-not $exe) {
             Write-Error "❌ Could not find SpaceCadetPinball.exe!"
             exit 1
