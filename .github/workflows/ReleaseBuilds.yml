@@ -201,6 +201,7 @@ jobs:
             release_name: SpaceCadetPinball ${{ needs.extract-version.outputs.sw_version }}
             draft: false
             prerelease: false
+            token: ${{ secrets.GH_TOKEN }}
   
         - name: Upload all release assets
           uses: actions/github-script@main
