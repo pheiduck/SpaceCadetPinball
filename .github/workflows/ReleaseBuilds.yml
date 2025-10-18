@@ -190,7 +190,7 @@ jobs:
             prerelease: false
   
         - name: Upload all release assets
-          uses: actions/github-script@v7
+          uses: actions/github-script@main
           env:
             UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
           with:
