@@ -128,14 +128,19 @@ jobs:
       - uses: actions/checkout@main
 
       - name: Install dependencies
-        run: choco install cmake ninja curl unzip -y
+        run: |
+          choco install cmake ninja git -y
+          # Install vcpkg
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
         shell: powershell
 
       - name: Build Windows binary
         run: |
           mkdir build
           cd build
-          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           cmake --build . --config Release
           cd ..
 
