@@ -71,18 +71,16 @@ jobs:
             libasound2-dev libpulse-dev libudev-dev \
             libx11-dev libxext-dev libxinerama-dev libxcursor-dev \
             libxi-dev libgl1-mesa-dev
-          # SDL2 statisch bauen
-          wget https://www.libsdl.org/release/SDL2-2.26.7.tar.gz
-          tar xvf SDL2-2.26.7.tar.gz
-          cd SDL2-2.26.7
+          wget https://www.libsdl.org/release/SDL2-2.32.10.tar.gz
+          tar xvf SDL2-2.32.10.tar.gz
+          cd SDL2-2.32.10
           ./configure --disable-shared --enable-static
           make -j$(nproc)
           sudo make install
           cd ..
-          # SDL2_mixer statisch bauen
-          wget https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-2.6.3.tar.gz
-          tar xvf SDL2_mixer-2.6.3.tar.gz
-          cd SDL2_mixer-2.6.3
+          wget https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-2.8.1.tar.gz
+          tar xvf SDL2_mixer-2.8.1.tar.gz
+          cd SDL2_mixer-2.8.1
           ./configure --disable-shared --enable-static
           make -j$(nproc)
           sudo make install
