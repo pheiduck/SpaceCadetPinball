@@ -14,24 +14,50 @@ env:
 jobs:
   build-macos:
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     outputs:
       dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
     steps:
       - uses: actions/checkout@main
-        with:
-          ref: master
 
-      - name: Build macOS App
-        run: bash build-mac-app.sh
+      - name: Install dependencies
+        run: brew install cmake sdl2 sdl2_mixer
+
+      - name: Build macOS binary
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(sysctl -n hw.ncpu)
+        shell: bash
+
+      - name: List build directory for debugging
+        run: ls -R build
+
+      - name: Wrap binary in .app bundle
+        run: |
+          mkdir -p SpaceCadetPinball.app/Contents/MacOS
+          mkdir -p SpaceCadetPinball.app/Contents/Resources
+
+          # Find binary
+          BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
+          if [[ -z "$BINARY" ]]; then
+            echo "❌ Could not find macOS binary!"
+            exit 1
+          fi
+
+          cp "$BINARY" SpaceCadetPinball.app/Contents/MacOS/
 
       - name: Download game assets
         run: |
-          echo "Downloading Pinball assets..."
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* SpaceCadetPinball.app/Contents/Resources/
           rm -rf Win32.Pinball.zip PinballAssets/
+
+      - name: Package .dmg
+        run: |
+          hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg -srcfolder SpaceCadetPinball.app -ov
 
       - name: Get .dmg file name
         id: find_dmg
@@ -52,8 +78,6 @@ jobs:
       tar_name: ${{ steps.find_tar.outputs.tar_name }}
     steps:
       - uses: actions/checkout@main
-        with:
-          ref: master
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake libsdl2-dev libsdl2-mixer-dev curl unzip
@@ -64,21 +88,24 @@ jobs:
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          cd ..
 
-      - name: Download and bundle assets
+      - name: Download game assets and package
         run: |
-          echo "Downloading Pinball assets..."
+          mkdir -p release/Pinball
+          BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
+          if [[ -z "$BINARY" ]]; then
+            echo "❌ Could not find Linux binary!"
+            exit 1
+          fi
+          cp "$BINARY" release/
+
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
-          mkdir -p release/Pinball
-          cp build/SpaceCadetPinball release/
           cp -a PinballAssets/Pinball/* release/Pinball/
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
           cd ..
           rm -rf Win32.Pinball.zip PinballAssets/
-        shell: bash
 
       - name: Get .tar.gz file name
         id: find_tar
@@ -99,13 +126,9 @@ jobs:
       zip_name: ${{ steps.find_zip.outputs.zip_name }}
     steps:
       - uses: actions/checkout@main
-        with:
-          ref: master
 
       - name: Install dependencies
-        run: |
-          choco install cmake -y --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install ninja curl unzip -y
+        run: choco install cmake ninja curl unzip -y
         shell: powershell
 
       - name: Build Windows binary
@@ -115,31 +138,33 @@ jobs:
           cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release
           cd ..
-          mkdir release
 
-          if (Test-Path build\\SpaceCadetPinball.exe) {
-            Copy-Item build\\SpaceCadetPinball.exe release\\
-          } elseif (Test-Path build\\Release\\SpaceCadetPinball.exe) {
-            Copy-Item build\\Release\\SpaceCadetPinball.exe release\\
-          } else {
-            Write-Error "❌ Could not find SpaceCadetPinball.exe after build."
+      - name: List build directory for debugging
+        run: Get-ChildItem -Recurse build | ForEach-Object { Write-Host $_.FullName }
+        shell: pwsh
+
+      - name: Locate binary and copy to release
+        run: |
+          mkdir release
+          $exe = Get-ChildItem -Recurse build -Filter 'SpaceCadetPinball.exe' | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "❌ Could not find SpaceCadetPinball.exe!"
             exit 1
           }
+          Copy-Item $exe.FullName release\
         shell: pwsh
 
       - name: Download game assets
         run: |
-          echo "Downloading Pinball assets..."
           curl -L -o Win32.Pinball.zip $env:ASSETS_URL
           mkdir PinballAssets
           unzip -o Win32.Pinball.zip -d PinballAssets
         shell: pwsh
 
-      - name: Package game with assets
+      - name: Package Windows release with assets
         run: |
-          echo "Packaging SpaceCadetPinball with game assets..."
-          mkdir release\\Pinball
-          Copy-Item -Recurse PinballAssets\\Pinball\\* release\\Pinball\\
+          mkdir release\Pinball
+          Copy-Item -Recurse PinballAssets\Pinball\* release\Pinball\
           cd release
           powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64.zip
         shell: pwsh
@@ -161,7 +186,7 @@ jobs:
     needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@main
         with:
           path: ./release
