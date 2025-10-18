@@ -65,10 +65,10 @@ jobs:
       - uses: actions/checkout@main
 
       - name: Cache SDL2
-        uses: actions/cache@v3
+        uses: actions/cache@main
         with:
-          path: ${{ runner.home }}/sdl2-build
-          key: sdl2-static-${{ hashFiles('SDL2-2.32.10.tar.gz', 'SDL2_mixer-2.8.1.tar.gz') }}
+          path: /home/runner/sdl2-build/
+          key: sdl2-static-${{ hashFiles('SDL2-2.32.10.tar.gz', 'SDL2_mixer-2.8.1.tar.gz', 'Makefile', '**/*.c', '**/*.h') }}
 
       - name: Install dependencies
         run: |
