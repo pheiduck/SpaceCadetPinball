@@ -74,7 +74,7 @@ codesign --force --deep --sign - SpaceCadetPinball.app
 # === Create DMG ===
 hdiutil create -fs HFS+ -srcfolder SpaceCadetPinball.app \
   -volname "SpaceCadetPinball $sw_version" \
-  "SpaceCadetPinball-$sw_version-mac.dmg"
+  "SpaceCadetPinball-mac-$sw_version.dmg"
 
 # === Clean up ===
 rm -rf SpaceCadetPinball.app
