@@ -147,16 +147,7 @@ jobs:
 
       - name: Copy SDL2 runtime DLLs
         run: |
-          $dllPath = "C:\vcpkg\installed\x64-windows\bin"
-          $dlls = @("SDL2.dll", "SDL2_mixer.dll", "vorbisfile.dll", "wavepack.dll")
-          foreach ($dll in $dlls) {
-              if (Test-Path "$dllPath\$dll") {
-                  Copy-Item "$dllPath\$dll" release\
-              } else {
-                  Write-Host "⚠️ $dll not found in $dllPath"
-              }
-          }
-      
+          Copy-Item "C:\vcpkg\installed\x64-windows\bin\*.dll" release\
           Write-Host "✅ Copied SDL2 and related runtime DLLs"
         shell: pwsh
 
