@@ -86,7 +86,7 @@ jobs:
             exit 1
           fi
 
-          mkdir -p release/Pinball
+          mkdir -p release
           cp "$BINARY" release/
 
           curl -L -o Win32.Pinball.zip $ASSETS_URL
