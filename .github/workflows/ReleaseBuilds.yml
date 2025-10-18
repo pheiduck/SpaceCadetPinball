@@ -81,7 +81,6 @@ jobs:
             exit 1
           fi
 
-          BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
           mkdir -p release/Pinball
           cp "$BINARY" release/
           curl -L -o Win32.Pinball.zip $ASSETS_URL
