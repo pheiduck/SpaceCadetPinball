@@ -135,7 +135,6 @@ jobs:
 
       - name: Locate binary and copy to release
         run: |
-          $sw_version='${{ needs.extract-version.outputs.sw_version }}'
           mkdir release
           $exe = "D:\a\SpaceCadetPinball\SpaceCadetPinball\bin\SpaceCadetPinball.exe"
           if (-not (Test-Path $exe)) {
@@ -154,11 +153,10 @@ jobs:
 
       - name: Package Windows release with assets
         run: |
-          sw_version='${{ needs.extract-version.outputs.sw_version }}'
           mkdir release\Pinball
           Copy-Item -Recurse PinballAssets\Pinball\* release\Pinball\
           cd release
-          powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64-$sw_version.zip
+          powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64-${{ needs.extract-version.outputs.sw_version }}.zip
         shell: pwsh
 
       - name: Get .zip file name
