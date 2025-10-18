@@ -76,7 +76,7 @@ jobs:
 
       - name: Package Linux binary with assets
         run: |
-          sw_version=${{ needs.extract-version.outputs.sw_version }}
+          $sw_version = '${{ needs.extract-version.outputs.sw_version }}'
           BINARY="/home/runner/work/SpaceCadetPinball/SpaceCadetPinball/bin/SpaceCadetPinball"
           if [[ ! -f "$BINARY" ]]; then
             echo "❌ Could not find Linux binary at $BINARY"
