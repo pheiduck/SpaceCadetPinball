@@ -68,8 +68,7 @@ jobs:
 
       - name: Package Linux binary with game assets
         run: |
-          # Adjust path to the actual binary
-          BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
+          BINARY="/home/runner/work/SpaceCadetPinball/SpaceCadetPinball/bin/SpaceCadetPinball"
           if [[ ! -f "$BINARY" ]]; then
             echo "❌ Could not find Linux binary at $BINARY"
             exit 1
@@ -132,7 +131,7 @@ jobs:
       - name: Locate binary and copy to release
         run: |
           mkdir release
-          $exe = "SpaceCadetPinball\bin\SpaceCadetPinball.exe"
+          $exe = "D:\a\SpaceCadetPinball\SpaceCadetPinball\bin\SpaceCadetPinball.exe"
           if (-not (Test-Path $exe)) {
             Write-Error "❌ Could not find SpaceCadetPinball.exe at $exe"
             exit 1
