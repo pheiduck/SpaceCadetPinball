@@ -66,26 +66,29 @@ jobs:
       - name: List build directory for debugging
         run: ls -R build
 
-      - name: Package Linux binary with game assets
+      - name: Extract version
+        id: extract_version
         run: |
           sw_version=$(grep "sw_version=" build-mac-app.sh | head -n1 | sed "s/.*['\"]\([0-9.]*\)['\"].*/\1/")
-          echo "Version: $sw_version"
+          echo "Detected version: $sw_version"
+          echo "sw_version=$sw_version" >> $GITHUB_OUTPUT
 
+      - name: Package Linux binary
+        run: |
           BINARY="/home/runner/work/SpaceCadetPinball/SpaceCadetPinball/bin/SpaceCadetPinball"
           if [[ ! -f "$BINARY" ]]; then
             echo "❌ Could not find Linux binary at $BINARY"
             exit 1
           fi
 
+          BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
           mkdir -p release/Pinball
           cp "$BINARY" release/
-      
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
-      
           cd release
-          tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
+          tar -czf SpaceCadetPinball-Linux-x86_64-${{ steps.extract_version.outputs.sw_version }}.tar.gz *
           cd ..
           rm -rf Win32.Pinball.zip PinballAssets
 
@@ -100,6 +103,7 @@ jobs:
         with:
           name: linux-build
           path: ${{ steps.find_tar.outputs.tar_name }}
+          if-no-files-found: warn
 
   build-windows:
     runs-on: windows-latest
