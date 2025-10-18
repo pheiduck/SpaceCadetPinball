@@ -7,6 +7,7 @@ on:
         description: 'Automated Release'
         required: true
         type: string
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -28,20 +29,114 @@ jobs:
           echo "Found dmg: $FILE"
           echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
-      - name: Upload artifact
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@main
         with:
           name: mac-build
           path: ${{ steps.find_dmg.outputs.dmg_name }}
 
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tar_name: ${{ steps.find_tar.outputs.tar_name }}
+    steps:
+      - uses: actions/checkout@main
+        with:
+          ref: master
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake libsdl2-dev libsdl2-mixer-dev
+
+      - name: Build Linux binary
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+          cd ..
+          mkdir -p release
+          cp build/SpaceCadetPinball ./release/
+          cd release
+          tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz SpaceCadetPinball
+
+      - name: Get .tar.gz file name
+        id: find_tar
+        run: |
+          FILE=$(ls release/SpaceCadetPinball-*-Linux-x86_64.tar.gz | head -n 1)
+          echo "Found tarball: $FILE"
+          echo "tar_name=$FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: linux-build
+          path: ${{ steps.find_tar.outputs.tar_name }}
+
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    outputs:
+      zip_name: ${{ steps.find_zip.outputs.zip_name }}
+    steps:
+      - uses: actions/checkout@main
+        with:
+          ref: master
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies
+        run: |
+          choco install cmake -y --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install ninja -y
+        shell: powershell
+
+      - name: Build Windows binary
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+          cd ..
+          mkdir release
+          copy build\\SpaceCadetPinball.exe release\\
+          cd release
+          powershell Compress-Archive -Path SpaceCadetPinball.exe -DestinationPath SpaceCadetPinball-Windows-x64.zip
+
+      - name: Get .zip file name
+        id: find_zip
+        run: |
+          $file = Get-ChildItem -Path release -Filter *.zip | Select-Object -First 1
+          echo "zip_name=$($file.Name)" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: windows-build
+          path: ${{ github.workspace }}/release/${{ steps.find_zip.outputs.zip_name }}
+
   release:
-    needs: build-macos
+    needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifact
+      - name: Download macOS artifact
         uses: actions/download-artifact@main
         with:
           name: mac-build
+          path: ./release
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@main
+        with:
+          name: linux-build
+          path: ./release
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@main
+        with:
+          name: windows-build
           path: ./release
 
       - name: Create GitHub Release
@@ -55,7 +150,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Upload macOS Release Asset
         uses: actions/upload-release-asset@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,3 +159,23 @@ jobs:
           asset_path: ./release/${{ needs.build-macos.outputs.dmg_name }}
           asset_name: ${{ needs.build-macos.outputs.dmg_name }}
           asset_content_type: application/octet-stream
+
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/${{ needs.build-linux.outputs.tar_name }}
+          asset_name: ${{ needs.build-linux.outputs.tar_name }}
+          asset_content_type: application/gzip
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/${{ needs.build-windows.outputs.zip_name }}
+          asset_name: ${{ needs.build-windows.outputs.zip_name }}
+          asset_content_type: application/zip
