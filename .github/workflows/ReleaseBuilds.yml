@@ -157,8 +157,7 @@ jobs:
           cmake .. -G "Ninja" `
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-            -DBUILD_SHARED_LIBS=OFF `
-            -DSDL2_DIR=C:/vcpkg/installed/x64-windows-static/share/sdl2
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
           cmake --build . --config Release
           cd ..
         shell: pwsh
