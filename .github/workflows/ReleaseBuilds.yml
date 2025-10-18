@@ -8,10 +8,13 @@ on:
         required: true
         type: string
 
+env:
+  ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
+
 jobs:
   build-macos:
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     outputs:
       dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
     steps:
@@ -22,11 +25,18 @@ jobs:
       - name: Build macOS App
         run: bash build-mac-app.sh
 
+      - name: Download game assets
+        run: |
+          echo "Downloading Pinball assets..."
+          curl -L -o Win32.Pinball.zip $ASSETS_URL
+          unzip -o Win32.Pinball.zip -d PinballAssets/
+          cp -a PinballAssets/Pinball/* SpaceCadetPinball.app/Contents/Resources/
+          rm -rf Win32.Pinball.zip PinballAssets/
+
       - name: Get .dmg file name
         id: find_dmg
         run: |
           FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
-          echo "Found dmg: $FILE"
           echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload macOS artifact
@@ -37,7 +47,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     outputs:
       tar_name: ${{ steps.find_tar.outputs.tar_name }}
     steps:
@@ -46,25 +56,34 @@ jobs:
           ref: master
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake libsdl2-dev libsdl2-mixer-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake libsdl2-dev libsdl2-mixer-dev curl unzip
 
       - name: Build Linux binary
         run: |
-          mkdir -p build
+          mkdir build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           cd ..
-          mkdir -p release
-          cp build/SpaceCadetPinball ./release/
+
+      - name: Download and bundle assets
+        run: |
+          echo "Downloading Pinball assets..."
+          curl -L -o Win32.Pinball.zip $ASSETS_URL
+          unzip -o Win32.Pinball.zip -d PinballAssets/
+          mkdir -p release/Pinball
+          cp build/SpaceCadetPinball release/
+          cp -a PinballAssets/Pinball/* release/Pinball/
           cd release
-          tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz SpaceCadetPinball
+          tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
+          cd ..
+          rm -rf Win32.Pinball.zip PinballAssets/
+        shell: bash
 
       - name: Get .tar.gz file name
         id: find_tar
         run: |
           FILE=$(ls release/SpaceCadetPinball-*-Linux-x86_64.tar.gz | head -n 1)
-          echo "Found tarball: $FILE"
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Linux artifact
@@ -75,7 +94,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     outputs:
       zip_name: ${{ steps.find_zip.outputs.zip_name }}
     steps:
@@ -83,13 +102,10 @@ jobs:
         with:
           ref: master
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
       - name: Install dependencies
         run: |
           choco install cmake -y --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install ninja -y
+          choco install ninja curl unzip -y
         shell: powershell
 
       - name: Build Windows binary
@@ -100,9 +116,33 @@ jobs:
           cmake --build . --config Release
           cd ..
           mkdir release
-          copy build\\SpaceCadetPinball.exe release\\
+
+          if (Test-Path build\\SpaceCadetPinball.exe) {
+            Copy-Item build\\SpaceCadetPinball.exe release\\
+          } elseif (Test-Path build\\Release\\SpaceCadetPinball.exe) {
+            Copy-Item build\\Release\\SpaceCadetPinball.exe release\\
+          } else {
+            Write-Error "❌ Could not find SpaceCadetPinball.exe after build."
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Download game assets
+        run: |
+          echo "Downloading Pinball assets..."
+          curl -L -o Win32.Pinball.zip $env:ASSETS_URL
+          mkdir PinballAssets
+          unzip -o Win32.Pinball.zip -d PinballAssets
+        shell: pwsh
+
+      - name: Package game with assets
+        run: |
+          echo "Packaging SpaceCadetPinball with game assets..."
+          mkdir release\\Pinball
+          Copy-Item -Recurse PinballAssets\\Pinball\\* release\\Pinball\\
           cd release
-          powershell Compress-Archive -Path SpaceCadetPinball.exe -DestinationPath SpaceCadetPinball-Windows-x64.zip
+          powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64.zip
+        shell: pwsh
 
       - name: Get .zip file name
         id: find_zip
@@ -121,22 +161,9 @@ jobs:
     needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - name: Download macOS artifact
+      - name: Download artifacts
         uses: actions/download-artifact@main
         with:
-          name: mac-build
-          path: ./release
-
-      - name: Download Linux artifact
-        uses: actions/download-artifact@main
-        with:
-          name: linux-build
-          path: ./release
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@main
-        with:
-          name: windows-build
           path: ./release
 
       - name: Create GitHub Release
@@ -150,32 +177,22 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload macOS Release Asset
-        uses: actions/upload-release-asset@main
+      - name: Upload all release assets
+        uses: actions/github-script@v7
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/${{ needs.build-macos.outputs.dmg_name }}
-          asset_name: ${{ needs.build-macos.outputs.dmg_name }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload Linux Release Asset
-        uses: actions/upload-release-asset@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/${{ needs.build-linux.outputs.tar_name }}
-          asset_name: ${{ needs.build-linux.outputs.tar_name }}
-          asset_content_type: application/gzip
-
-      - name: Upload Windows Release Asset
-        uses: actions/upload-release-asset@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/${{ needs.build-windows.outputs.zip_name }}
-          asset_name: ${{ needs.build-windows.outputs.zip_name }}
-          asset_content_type: application/zip
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const uploadUrl = process.env.UPLOAD_URL;
+            const files = fs.readdirSync('./release').filter(f => /\.(zip|dmg|tar\.gz)$/.test(f));
+            for (const file of files) {
+              console.log(`Uploading ${file}`);
+              await github.rest.repos.uploadReleaseAsset({
+                url: uploadUrl,
+                headers: { 'content-type': 'application/octet-stream' },
+                name: path.basename(file),
+                data: fs.readFileSync(`./release/${file}`)
+              });
+            }
