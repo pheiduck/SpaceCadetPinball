@@ -68,7 +68,7 @@ jobs:
 
       - name: Package Linux binary with game assets
         run: |
-          sw_version=$(grep -oP "sw_version=['\"]\K[0-9]+\.[0-9]+\.[0-9]+" build-mac-app.sh)
+          sw_version=$(grep "sw_version=" build-mac-app.sh | head -n1 | sed "s/.*['\"]\([0-9.]*\)['\"].*/\1/")
           echo "Version: $sw_version"
 
           BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
