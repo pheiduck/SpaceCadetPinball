@@ -12,66 +12,38 @@ env:
   ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
 
 jobs:
-  build-macos:
-    runs-on: macos-15-intel
-    timeout-minutes: 25
-    outputs:
-      dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
-    steps:
-      - uses: actions/checkout@main
+ build-macos:
+  runs-on: macos-latest
+  timeout-minutes: 25
+  outputs:
+    dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
+  steps:
+    - uses: actions/checkout@main
 
-      - name: Install dependencies
-        run: brew install cmake sdl2 sdl2_mixer
+    - name: Build macOS App
+      run: bash build-mac-app.sh
 
-      - name: Build macOS binary
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
-          make -j$(sysctl -n hw.ncpu)
-        shell: bash
+    - name: Verify build output
+      run: ls -R
 
-      - name: List build directory for debugging
-        run: ls -R build
+    - name: Package .dmg
+      run: |
+        hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg \
+        -srcfolder SpaceCadetPinball.app -ov
 
-      - name: Wrap binary in .app bundle
-        run: |
-          mkdir -p SpaceCadetPinball.app/Contents/MacOS
-          mkdir -p SpaceCadetPinball.app/Contents/Resources
+    - name: Get .dmg file name
+      id: find_dmg
+      run: |
+        FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
+        echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
-          # Find binary
-          BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
-          if [[ -z "$BINARY" ]]; then
-            echo "❌ Could not find macOS binary!"
-            exit 1
-          fi
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@main
+      with:
+        name: mac-build
+        path: ${{ steps.find_dmg.outputs.dmg_name }}
 
-          cp "$BINARY" SpaceCadetPinball.app/Contents/MacOS/
-
-      - name: Download game assets
-        run: |
-          curl -L -o Win32.Pinball.zip $ASSETS_URL
-          unzip -o Win32.Pinball.zip -d PinballAssets/
-          cp -a PinballAssets/Pinball/* SpaceCadetPinball.app/Contents/Resources/
-          rm -rf Win32.Pinball.zip PinballAssets/
-
-      - name: Package .dmg
-        run: |
-          hdiutil create SpaceCadetPinball-${{ github.event.inputs.version }}-mac.dmg -srcfolder SpaceCadetPinball.app -ov
-
-      - name: Get .dmg file name
-        id: find_dmg
-        run: |
-          FILE=$(ls SpaceCadetPinball-*-mac.dmg | head -n 1)
-          echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@main
-        with:
-          name: mac-build
-          path: ${{ steps.find_dmg.outputs.dmg_name }}
-
-  build-linux:
+build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
@@ -129,7 +101,7 @@ jobs:
           name: linux-build
           path: ${{ steps.find_tar.outputs.tar_name }}
 
-  build-windows:
+build-windows:
     runs-on: windows-latest
     timeout-minutes: 25
     outputs:
