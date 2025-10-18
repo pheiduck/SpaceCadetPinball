@@ -73,46 +73,56 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     outputs:
       tar_name: ${{ steps.find_tar.outputs.tar_name }}
     steps:
       - uses: actions/checkout@main
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake libsdl2-dev libsdl2-mixer-dev curl unzip
-
-      - name: Build Linux binary
+        run: sudo apt-get update && sudo apt-get install -y \
+          cmake build-essential libsdl2-dev libsdl2-mixer-dev curl unzip
+  
+      - name: Build Linux binary from source
         run: |
-          mkdir build
+          mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-
-      - name: Download game assets and package
+          cd ..
+          
+      - name: List build directory for debugging
+        run: ls -R build
+  
+      - name: Package binary with game assets
         run: |
-          mkdir -p release/Pinball
+          # Find the built binary
           BINARY=$(find build -type f -name 'SpaceCadetPinball' | head -n 1)
           if [[ -z "$BINARY" ]]; then
             echo "❌ Could not find Linux binary!"
             exit 1
           fi
+  
+          mkdir -p release/Pinball
           cp "$BINARY" release/
-
-          curl -L -o Win32.Pinball.zip $ASSETS_URL
+  
+          # Download and include game assets
+          curl -L -o Win32.Pinball.zip https://archive.org/download/winXP-pinball/Win32.Pinball.zip
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
+  
+          # Package everything
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64.tar.gz *
           cd ..
-          rm -rf Win32.Pinball.zip PinballAssets/
+          rm -rf Win32.Pinball.zip PinballAssets
 
       - name: Get .tar.gz file name
         id: find_tar
         run: |
           FILE=$(ls release/SpaceCadetPinball-*-Linux-x86_64.tar.gz | head -n 1)
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
-
+  
       - name: Upload Linux artifact
         uses: actions/upload-artifact@main
         with:
