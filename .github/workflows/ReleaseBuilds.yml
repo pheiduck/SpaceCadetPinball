@@ -119,8 +119,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          choco install cmake ninja git -y --no-progress
+          if (-not (Test-Path "C:\vcpkg")) {
+            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+            C:\vcpkg\bootstrap-vcpkg.bat
+          }
           C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
-        shell: powershell
+        shell: pwsh
 
       - name: Build Windows binary
         run: |
@@ -129,6 +134,7 @@ jobs:
           cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           cmake --build . --config Release
           cd ..
+        shell: pwsh
 
       - name: Locate binary and copy to release
         run: |
@@ -139,6 +145,18 @@ jobs:
             exit 1
           }
           Copy-Item $exe release\
+        shell: pwsh
+
+      - name: Copy SDL2 runtime DLLs
+        run: |
+          $dllPath = "C:\vcpkg\installed\x64-windows\bin"
+          if (Test-Path "$dllPath\SDL2.dll") {
+            Copy-Item "$dllPath\SDL2.dll" release\
+          }
+          if (Test-Path "$dllPath\SDL2_mixer.dll") {
+            Copy-Item "$dllPath\SDL2_mixer.dll" release\
+          }
+          Write-Host "✅ Copied SDL2 runtime DLLs"
         shell: pwsh
 
       - name: Download game assets
@@ -162,7 +180,7 @@ jobs:
           $file = Get-ChildItem -Path release -Filter *.zip | Select-Object -First 1
           echo "zip_name=$($file.Name)" >> $env:GITHUB_OUTPUT
         shell: pwsh
-
+  
       - name: Upload Windows artifact
         uses: actions/upload-artifact@main
         with:
