@@ -2,23 +2,33 @@ name: Make Release Builds
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Automated Release'
-        required: true
-        type: string
 
 env:
   ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
 
 jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      sw_version: ${{ steps.get_version.outputs.sw_version }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Extract version from build-mac-app.sh
+        id: get_version
+        run: |
+          sw_version=$(grep "sw_version=" build-mac-app.sh | head -n1 | sed "s/.*['\"]\([0-9.]*\)['\"].*/\1/")
+          echo "Detected version: $sw_version"
+          echo "sw_version=$sw_version" >> $GITHUB_OUTPUT
+
   build-macos:
+    needs: extract-version
     runs-on: macos-latest
     timeout-minutes: 25
     outputs:
       dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3
 
       - name: Build macOS App (.dmg)
         run: bash build-mac-app.sh
@@ -37,18 +47,19 @@ jobs:
           echo "dmg_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: mac-build
           path: ${{ steps.find_dmg.outputs.dmg_name }}
 
   build-linux:
+    needs: extract-version
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
       tar_name: ${{ steps.find_tar.outputs.tar_name }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3
 
       - name: Install dependencies
         run: |
@@ -63,18 +74,9 @@ jobs:
           make -j$(nproc)
           cd ..
 
-      - name: List build directory for debugging
-        run: ls -R build
-
-      - name: Extract version
-        id: extract_version
+      - name: Package Linux binary with assets
         run: |
-          sw_version=$(grep "sw_version=" build-mac-app.sh | head -n1 | sed "s/.*['\"]\([0-9.]*\)['\"].*/\1/")
-          echo "Detected version: $sw_version"
-          echo "sw_version=$sw_version" >> $GITHUB_OUTPUT
-
-      - name: Package Linux binary
-        run: |
+          sw_version=${{ needs.extract-version.outputs.sw_version }}
           BINARY="/home/runner/work/SpaceCadetPinball/SpaceCadetPinball/bin/SpaceCadetPinball"
           if [[ ! -f "$BINARY" ]]; then
             echo "❌ Could not find Linux binary at $BINARY"
@@ -83,34 +85,37 @@ jobs:
 
           mkdir -p release/Pinball
           cp "$BINARY" release/
+
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/Pinball/
+
           cd release
-          tar -czf SpaceCadetPinball-Linux-x86_64-${{ steps.extract_version.outputs.sw_version }}.tar.gz *
+          tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
           cd ..
           rm -rf Win32.Pinball.zip PinballAssets
 
       - name: Get .tar.gz file name
         id: find_tar
         run: |
-          FILE=$(ls release/SpaceCadetPinball-Linux-x86_64-${{ steps.extract_version.outputs.sw_version }}.tar.gz | head -n 1)
+          sw_version=${{ needs.extract-version.outputs.sw_version }}
+          FILE=$(ls release/SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz | head -n 1)
           echo "tar_name=$FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: linux-build
           path: ${{ steps.find_tar.outputs.tar_name }}
-          if-no-files-found: warn
 
   build-windows:
+    needs: extract-version
     runs-on: windows-latest
     timeout-minutes: 25
     outputs:
       zip_name: ${{ steps.find_zip.outputs.zip_name }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3
 
       - name: Install dependencies
         run: |
@@ -128,12 +133,9 @@ jobs:
           cmake --build . --config Release
           cd ..
 
-      - name: List build directory for debugging
-        run: Get-ChildItem -Recurse build | ForEach-Object { Write-Host $_.FullName }
-        shell: pwsh
-
       - name: Locate binary and copy to release
         run: |
+          sw_version = '${{ needs.extract-version.outputs.sw_version }}'
           mkdir release
           $exe = "D:\a\SpaceCadetPinball\SpaceCadetPinball\bin\SpaceCadetPinball.exe"
           if (-not (Test-Path $exe)) {
@@ -149,15 +151,10 @@ jobs:
           mkdir PinballAssets
           unzip -o Win32.Pinball.zip -d PinballAssets
         shell: pwsh
-        
-      - name: Extract version from build-mac-app.sh
-        run: |
-          $sw_version = Select-String -Path build-mac-app.sh -Pattern "sw_version=['""](\d+\.\d+\.\d+)['""]" | ForEach-Object { $_.Matches[0].Groups[1].Value }
-          Write-Host "Version detected: $sw_version"
-        shell: pwsh
 
       - name: Package Windows release with assets
         run: |
+          sw_version='${{ needs.extract-version.outputs.sw_version }}'
           mkdir release\Pinball
           Copy-Item -Recurse PinballAssets\Pinball\* release\Pinball\
           cd release
@@ -172,7 +169,7 @@ jobs:
         shell: pwsh
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: windows-build
           path: ${{ github.workspace }}/release/${{ steps.find_zip.outputs.zip_name }}
@@ -182,18 +179,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v3
         with:
           path: ./release
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@main
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          release_name: Release ${{ github.event.inputs.version }}
+          tag_name: ${{ needs.extract-version.outputs.sw_version }}
+          release_name: Release ${{ needs.extract-version.outputs.sw_version }}
           draft: false
           prerelease: false
 
