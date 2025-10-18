@@ -71,7 +71,7 @@ jobs:
           sw_version=$(grep "sw_version=" build-mac-app.sh | head -n1 | sed "s/.*['\"]\([0-9.]*\)['\"].*/\1/")
           echo "Version: $sw_version"
 
-          BINARY="SpaceCadetPinball/bin/SpaceCadetPinball"
+          BINARY="/home/runner/work/SpaceCadetPinball/SpaceCadetPinball/bin/SpaceCadetPinball"
           if [[ ! -f "$BINARY" ]]; then
             echo "❌ Could not find Linux binary at $BINARY"
             exit 1
