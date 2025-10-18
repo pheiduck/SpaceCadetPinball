@@ -91,7 +91,6 @@ jobs:
           curl -L -o Win32.Pinball.zip $ASSETS_URL
           unzip -o Win32.Pinball.zip -d PinballAssets/
           cp -a PinballAssets/Pinball/* release/
-          rm release/PINBALL.exe
 
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
