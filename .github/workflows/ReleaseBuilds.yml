@@ -23,7 +23,7 @@ jobs:
 
   build-macos:
     needs: extract-version
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     timeout-minutes: 25
     outputs:
       dmg_name: ${{ steps.find_dmg.outputs.dmg_name }}
