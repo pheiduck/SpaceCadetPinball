@@ -57,6 +57,7 @@ cp -a bin/SpaceCadetPinball SpaceCadetPinball.app/Contents/MacOS/
 
 # === Add game assets (from local repo) ===
   cp -a PinballAssets/* SpaceCadetPinball.app/Contents/Resources/
+  rm -rf PinballAssets
 
 # === Finalize bundle ===
 sed -i '' "s/CHANGEME_SW_VERSION/$sw_version/" SpaceCadetPinball.app/Contents/Info.plist
