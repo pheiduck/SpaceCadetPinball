@@ -9,7 +9,7 @@ if ! command -v brew &>/dev/null; then
 fi
 
 # === Install dependencies via Homebrew ===
-brew install cmake sdl2 sdl2_mixer lipo
+brew install cmake sdl2 sdl2_mixer
 
 # Get Homebrew framework paths
 brew_prefix=$(brew --prefix)
