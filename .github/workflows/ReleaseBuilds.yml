@@ -111,6 +111,7 @@ jobs:
           mkdir release
           cp "$BINARY" release/
           cp -a PinballAssets/* release/
+          rm -rf PinballAssets
 
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
