@@ -11,24 +11,15 @@ fi
 # === Install dependencies via Homebrew ===
 brew install cmake sdl2 sdl2_mixer
 
-# === Build for x86_64 ===
-mkdir -p build_x86_64
-pushd build_x86_64
+# === Build for arm64/x86_64 ===
+mkdir -p build_universal
+pushd build_universal
 brew_prefix=$(brew --prefix)
-cmake -DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 \
-      -DCMAKE_INCLUDE_PATH="$brew_prefix/include/SDL2;$brew_prefix/include/SDL2_mixer" \
-      -DCMAKE_LIBRARY_PATH="$brew_prefix/lib" \
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=bin .
-cmake --build .
-popd
-
-# === Build for arm64 ===
-mkdir -p build_arm64
-pushd build_arm64
-cmake -DCMAKE_OSX_ARCHITECTURES=arm64 \
-      -DCMAKE_OSX_FRAMEWORK_PATH="$brew_prefix/Frameworks" \
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=../bin/arm64 ..
-cmake --build .
+cmake -S . -B build_universal \
+      -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+      -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(pwd)/bin
+cmake --build build_universal --config Release
 popd
 
 # === Create universal binary ===
