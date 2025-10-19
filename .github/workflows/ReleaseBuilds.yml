@@ -6,9 +6,6 @@ on:
 permissions:
   contents: write
 
-env:
-  ASSETS_URL: https://archive.org/download/winXP-pinball/Win32.Pinball.zip
-
 jobs:
   extract-version:
     runs-on: ubuntu-latest
