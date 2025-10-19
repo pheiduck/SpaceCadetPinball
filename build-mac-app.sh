@@ -55,14 +55,8 @@ cp -a Libs/SDL2.framework SpaceCadetPinball.app/Contents/Frameworks/
 cp -a Libs/SDL2_mixer.framework SpaceCadetPinball.app/Contents/Frameworks/
 cp -a bin/SpaceCadetPinball SpaceCadetPinball.app/Contents/MacOS/
 
-# === Add game assets ===
-curl -LO https://archive.org/download/winXP-pinball/Win32.Pinball.zip
-unzip -o Win32.Pinball.zip -d PinballAssets/
-
-# Copy contents of Pinball folder into Resources
-cp -a PinballAssets/Pinball/* SpaceCadetPinball.app/Contents/Resources/
-
-rm -rf Win32.Pinball.zip PinballAssets/
+# === Add game assets (from local repo) ===
+  cp -a PinballAssets/* SpaceCadetPinball.app/Contents/Resources/
 
 # === Finalize bundle ===
 sed -i '' "s/CHANGEME_SW_VERSION/$sw_version/" SpaceCadetPinball.app/Contents/Info.plist
