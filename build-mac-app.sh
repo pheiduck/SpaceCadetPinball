@@ -11,23 +11,14 @@ fi
 # === Install dependencies via Homebrew ===
 brew install cmake sdl2 sdl2_mixer
 
-# Get Homebrew framework paths
-brew_prefix=$(brew --prefix)
-SDL2_FRAMEWORK="$brew_prefix/Frameworks/SDL2.framework"
-SDL2_MIXER_FRAMEWORK="$brew_prefix/Frameworks/SDL2_mixer.framework"
-
-# Verify frameworks exist
-if [ ! -d "$SDL2_FRAMEWORK" ] || [ ! -d "$SDL2_MIXER_FRAMEWORK" ]; then
-    echo "SDL2 or SDL2_mixer framework not found in Homebrew path."
-    exit 1
-fi
-
 # === Build for x86_64 ===
 mkdir -p build_x86_64
 pushd build_x86_64
-cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-      -DCMAKE_OSX_FRAMEWORK_PATH="$brew_prefix/Frameworks" \
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=../bin/x86_64 ..
+brew_prefix=$(brew --prefix)
+cmake -DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 \
+      -DCMAKE_INCLUDE_PATH="$brew_prefix/include/SDL2;$brew_prefix/include/SDL2_mixer" \
+      -DCMAKE_LIBRARY_PATH="$brew_prefix/lib" \
+      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=bin .
 cmake --build .
 popd
 
