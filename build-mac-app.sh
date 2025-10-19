@@ -2,16 +2,13 @@
 
 set -xe
 
-# === Prerequisites: make sure Homebrew is installed ===
-if ! command -v brew &>/dev/null; then
-    echo "Homebrew not found! Please install Homebrew first: https://brew.sh/"
-    exit 1
-fi
+# Install in /usr/local for x86_64
+arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-brew_prefix=$(brew --prefix)
+brew_prefix="/usr/local"
 
 # === Install dependencies via Homebrew ===
-brew install cmake sdl2 sdl2_mixer
+arch -x86_64 /usr/local/bin/brew install cmake sdl2 sdl2_mixer
 
 # === Build for x86_64 only ===
 mkdir -p build_x86_64
