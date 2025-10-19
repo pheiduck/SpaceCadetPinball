@@ -113,15 +113,11 @@ jobs:
 
           mkdir release
           cp "$BINARY" release/
-          curl -L -o Win32.Pinball.zip $ASSETS_URL
-          unzip -o Win32.Pinball.zip -d PinballAssets/
-          cp -a PinballAssets/Pinball/* release/
-          rm -f release\PINBALL.EXE
+          cp -a PinballAssets/* release/
 
           cd release
           tar -czf SpaceCadetPinball-Linux-x86_64-${sw_version}.tar.gz *
           cd ..
-          rm -rf Win32.Pinball.zip PinballAssets
 
       - name: Get .tar.gz file name
         id: find_tar
@@ -182,17 +178,9 @@ jobs:
           Write-Host "✅ Copied SDL2 and related runtime DLLs"
         shell: pwsh
 
-      - name: Download game assets
-        run: |
-          curl -L -o Win32.Pinball.zip $env:ASSETS_URL
-          mkdir PinballAssets
-          unzip -o Win32.Pinball.zip -d PinballAssets
-        shell: pwsh
-
       - name: Package Windows release with assets
         run: |
-          Copy-Item -Recurse PinballAssets\Pinball\* release\
-          Remove-Item release\PINBALL.EXE -Force
+          Copy-Item -Recurse PinballAssets\* release\
           cd release
           powershell Compress-Archive -Path * -DestinationPath SpaceCadetPinball-Windows-x64-${{ needs.extract-version.outputs.sw_version }}.zip
         shell: pwsh
