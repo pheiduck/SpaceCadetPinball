@@ -147,7 +147,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          C:\vcpkg\vcpkg.exe install sdl2 sdl2-mixer
+          vcpkg install sdl2 sdl2-mixer
         shell: pwsh
 
       - name: Build Windows binary
