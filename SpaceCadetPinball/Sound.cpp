@@ -13,6 +13,18 @@ void Sound::Init(bool mixOpen, int channels, bool enableFlag, int volume)
 {
 	MixOpen = mixOpen;
 	Volume = volume;
+
+#ifdef __linux__
+    if (MixOpen)
+    {
+        const char* fontPaths = 
+            "/usr/share/sounds/sf2/FluidR3_GM.sf2:"
+            "/usr/share/soundfonts/FluidR3_GM.sf2:"
+            "FluidR3_GM.sf2";
+        Mix_SetSoundFonts(fontPaths);
+    }
+#endif
+
 	SetChannels(channels);
 	Enable(enableFlag);
 }
