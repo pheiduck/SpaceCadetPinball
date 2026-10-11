@@ -48,6 +48,8 @@ set(SOURCE_FILES
         SpaceCadetPinball/control.h
         SpaceCadetPinball/EmbeddedData.cpp
         SpaceCadetPinball/EmbeddedData.h
+        SpaceCadetPinball/EmbeddedSoundFont.cpp
+        SpaceCadetPinball/EmbeddedSoundFont.h
         SpaceCadetPinball/font_selection.cpp
         SpaceCadetPinball/font_selection.h
         SpaceCadetPinball/fullscrn.cpp
@@ -217,6 +219,33 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.16.0" OR ${CMAKE_VERSION} VERSION_EQUAL "
 endif()
 
 target_link_libraries(SpaceCadetPinball ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY})
+
+# Linux only: link a General MIDI SoundFont into the executable (adds its size to the binary).
+#   cmake -DEMBED_SOUNDFONT=ON [-DSF2_FILE=/path/to/FluidR3_GM.sf2] .
+option(EMBED_SOUNDFONT "Embed a SoundFont (.sf2) in the executable (Linux)" OFF)
+set(SF2_FILE "" CACHE FILEPATH "SoundFont to embed; auto-detected if empty")
+if(EMBED_SOUNDFONT)
+    if(NOT UNIX OR APPLE)
+        message(FATAL_ERROR "EMBED_SOUNDFONT is only supported on Linux")
+    endif()
+    set(_sf2 "${SF2_FILE}")
+    if(NOT _sf2)
+        foreach(_cand /usr/share/sounds/sf2/FluidR3_GM.sf2 /usr/share/soundfonts/FluidR3_GM.sf2)
+            if(EXISTS "${_cand}")
+                set(_sf2 "${_cand}")
+                break()
+            endif()
+        endforeach()
+    endif()
+    if(NOT _sf2 OR NOT EXISTS "${_sf2}")
+        message(FATAL_ERROR "EMBED_SOUNDFONT=ON but no SoundFont found; install fluid-soundfont-gm or pass -DSF2_FILE=...")
+    endif()
+    get_filename_component(_sf2 "${_sf2}" REALPATH)
+    message(STATUS "Embedding SoundFont: ${_sf2}")
+    set_source_files_properties(SpaceCadetPinball/EmbeddedSoundFont.cpp PROPERTIES
+        COMPILE_DEFINITIONS "SF2_EMBEDDED_PATH=\"${_sf2}\""
+        OBJECT_DEPENDS "${_sf2}")
+endif()
 
 # On Windows, copy DLL to output
 if(WIN32)

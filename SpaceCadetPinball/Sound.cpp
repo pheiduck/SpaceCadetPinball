@@ -2,6 +2,7 @@
 #include "options.h"
 #include "Sound.h"
 #include "maths.h"
+#include "EmbeddedSoundFont.h"
 
 int Sound::num_channels;
 bool Sound::enabled_flag = false;
@@ -17,8 +18,13 @@ void Sound::Init(bool mixOpen, int channels, bool enableFlag, int volume)
 #ifdef __linux__
     if (MixOpen)
     {
-		const char* fontPaths = "/usr/share/sounds/sf2/FluidR3_GM.sf2:/usr/share/soundfonts/FluidR3_GM.sf2";
-        Mix_SetSoundFonts(fontPaths);
+		// Prefer the SoundFont embedded in the executable (if any), then system locations.
+		static std::string fontPaths;
+		fontPaths.clear();
+		if (const char* embedded = EmbeddedSoundFont_GetPath())
+			fontPaths = std::string(embedded) + ":";
+		fontPaths += "/usr/share/sounds/sf2/FluidR3_GM.sf2:/usr/share/soundfonts/FluidR3_GM.sf2";
+		Mix_SetSoundFonts(fontPaths.c_str());
     }
 #endif
 
