@@ -207,16 +207,16 @@ jobs:
             path: ./release
   
         - name: Create GitHub Release
-          id: create_release
-          uses: actions/create-release@main
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          uses: softprops/action-gh-release@v2
           with:
             tag_name: v${{ needs.extract-version.outputs.sw_version }}
-            release_name: SpaceCadetPinball ${{ needs.extract-version.outputs.sw_version }}
-            draft: false
-            prerelease: false
-            token: ${{ secrets.GH_TOKEN }}
+            name: SpaceCadetPinball ${{ needs.extract-version.outputs.sw_version }}
+            files: |
+              release/**/*.zip
+              release/**/*.dmg
+              release/**/*.tar.gz
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
         - name: Upload all release assets
           uses: actions/github-script@main
